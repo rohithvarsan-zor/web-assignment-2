@@ -1,0 +1,377 @@
+### ==============================================================================
+### RECRUITMENT MANAGEMENT SYSTEM - REST CLIENT API TEST COLLECTION
+### Base URL: http://localhost:5000/api
+### ==============================================================================
+
+@baseUrl = http://localhost:5000/api
+
+### ------------------------------------------------------------------------------
+### 1. HEALTH CHECK
+### ------------------------------------------------------------------------------
+GET {{baseUrl}}/health
+
+### ------------------------------------------------------------------------------
+### 2. AUTHENTICATION ENDPOINTS
+### ------------------------------------------------------------------------------
+
+### 2.1 Login as Administrator
+# @name adminLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Admin@123"
+}
+
+### Store Admin Token
+@adminToken = {{adminLogin.response.body.data.token}}
+
+### 2.2 Login as Recruiter
+# @name recruiterLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "recruiter@example.com",
+  "password": "Recruiter@123"
+}
+
+### Store Recruiter Token
+@recruiterToken = {{recruiterLogin.response.body.data.token}}
+
+### 2.3 Login as Candidate
+# @name candidateLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "candidate@example.com",
+  "password": "Candidate@123"
+}
+
+### Store Candidate Token
+@candidateToken = {{candidateLogin.response.body.data.token}}
+
+### 2.4 Register a New Candidate
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Jordan Bell",
+  "email": "jordan.bell@example.com",
+  "password": "Password@123",
+  "role": "candidate"
+}
+
+### 2.5 Register a New Recruiter
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Rachel Zane",
+  "email": "rachel@pearsonhardman.com",
+  "password": "Password@123",
+  "role": "recruiter",
+  "company_name": "Pearson Hardman Legal Tech"
+}
+
+### 2.6 Get Current User Profile (Me)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{candidateToken}}
+
+### 2.7 Change Password
+PUT {{baseUrl}}/auth/change-password
+Authorization: Bearer {{candidateToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "Candidate@123",
+  "newPassword": "NewCandidate@123"
+}
+
+### 2.8 Logout
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{candidateToken}}
+
+
+### ------------------------------------------------------------------------------
+### 3. JOBS ENDPOINTS
+### ------------------------------------------------------------------------------
+
+### 3.1 Get All Published Jobs (with Pagination & Filters)
+GET {{baseUrl}}/jobs?page=1&limit=5&status=published&sortBy=newest
+
+### 3.2 Search Jobs by Keyword & Location
+GET {{baseUrl}}/jobs?search=Engineer&location=San+Francisco&employment_type=Full-time
+
+### 3.3 Filter Jobs by Salary & Skill
+GET {{baseUrl}}/jobs?salary_min=130000&skill=PostgreSQL
+
+### 3.4 Get Job Details by ID
+GET {{baseUrl}}/jobs/1
+Authorization: Bearer {{candidateToken}}
+
+### 3.5 Create New Job (Recruiter Only)
+# @name createJob
+POST {{baseUrl}}/jobs
+Authorization: Bearer {{recruiterToken}}
+Content-Type: application/json
+
+{
+  "title": "Principal Distributed Database Engineer",
+  "description": "Design and architect zero-downtime distributed storage layers for high frequency ledger transactions.",
+  "location": "Remote",
+  "employment_type": "Full-time",
+  "experience_required": "6+ years",
+  "salary_min": 170000,
+  "salary_max": 220000,
+  "application_deadline": "2026-12-31",
+  "status": "published",
+  "skills": ["PostgreSQL", "Docker", "Node.js", "Redis"]
+}
+
+@createdJobId = {{createJob.response.body.data.id}}
+
+### 3.6 Update Job (Owner Recruiter / Admin)
+PUT {{baseUrl}}/jobs/{{createdJobId}}
+Authorization: Bearer {{recruiterToken}}
+Content-Type: application/json
+
+{
+  "title": "Staff Distributed Database Architect",
+  "salary_min": 180000,
+  "salary_max": 235000
+}
+
+### 3.7 Publish Draft Job
+POST {{baseUrl}}/jobs/{{createdJobId}}/publish
+Authorization: Bearer {{recruiterToken}}
+
+### 3.8 Close Job
+POST {{baseUrl}}/jobs/{{createdJobId}}/close
+Authorization: Bearer {{recruiterToken}}
+
+### 3.9 Save Job (Candidate Bookmark)
+POST {{baseUrl}}/jobs/1/save
+Authorization: Bearer {{candidateToken}}
+
+### 3.10 Unsave Job (Candidate Unbookmark)
+DELETE {{baseUrl}}/jobs/1/save
+Authorization: Bearer {{candidateToken}}
+
+### 3.11 Get Candidate Saved Jobs
+GET {{baseUrl}}/saved-jobs?page=1&limit=10
+Authorization: Bearer {{candidateToken}}
+
+
+### ------------------------------------------------------------------------------
+### 4. APPLICATIONS ENDPOINTS
+### ------------------------------------------------------------------------------
+
+### 4.1 Apply for a Job
+POST {{baseUrl}}/applications
+Authorization: Bearer {{candidateToken}}
+Content-Type: application/json
+
+{
+  "job_id": 2,
+  "cover_letter": "I have extensive experience leading frontend design tokens and React architectures."
+}
+
+### 4.2 Get Candidate's Applications
+GET {{baseUrl}}/applications/my?page=1&limit=10
+Authorization: Bearer {{candidateToken}}
+
+### 4.3 Get Application Details by ID
+GET {{baseUrl}}/applications/1
+Authorization: Bearer {{candidateToken}}
+
+### 4.4 Update Application Status (Recruiter / Admin)
+PUT {{baseUrl}}/applications/1/status
+Authorization: Bearer {{recruiterToken}}
+Content-Type: application/json
+
+{
+  "status": "shortlisted"
+}
+
+### 4.5 Withdraw Application (Candidate)
+DELETE {{baseUrl}}/applications/1
+Authorization: Bearer {{candidateToken}}
+
+
+### ------------------------------------------------------------------------------
+### 5. CANDIDATE PROFILE ENDPOINTS
+### ------------------------------------------------------------------------------
+
+### 5.1 Get Candidate Profile & Completion Score
+GET {{baseUrl}}/candidates/profile
+Authorization: Bearer {{candidateToken}}
+
+### 5.2 Update Candidate Profile
+PUT {{baseUrl}}/candidates/profile
+Authorization: Bearer {{candidateToken}}
+Content-Type: application/json
+
+{
+  "phone": "+1 415-555-8888",
+  "location": "San Francisco, CA",
+  "qualification": "B.S. in Computer Science",
+  "university": "UC Berkeley",
+  "graduation_year": 2020,
+  "experience_years": 4.5,
+  "bio": "Senior full-stack engineer passionate about event-driven architectures and TypeScript.",
+  "skills": ["React.js", "Node.js", "PostgreSQL", "Docker", "TypeScript"]
+}
+
+### 5.3 View Candidate Profile (Recruiter / Admin)
+GET {{baseUrl}}/candidates/4
+Authorization: Bearer {{recruiterToken}}
+
+
+### ------------------------------------------------------------------------------
+### 6. RECRUITER WORKSPACE ENDPOINTS
+### ------------------------------------------------------------------------------
+
+### 6.1 Get Recruiter Company Profile
+GET {{baseUrl}}/recruiter/profile
+Authorization: Bearer {{recruiterToken}}
+
+### 6.2 Update Recruiter Company Profile
+PUT {{baseUrl}}/recruiter/profile
+Authorization: Bearer {{recruiterToken}}
+Content-Type: application/json
+
+{
+  "company_name": "Apex Global Tech",
+  "company_description": "Building high-performance enterprise data infrastructures.",
+  "company_website": "https://apextech.io",
+  "designation": "Director of Technical Talent",
+  "phone": "+1 415-555-0199"
+}
+
+### 6.3 Get Recruiter Job Postings
+GET {{baseUrl}}/recruiter/jobs?page=1&limit=10
+Authorization: Bearer {{recruiterToken}}
+
+### 6.4 Get Recruiter Candidate Applications Pipeline
+GET {{baseUrl}}/recruiter/applications?page=1&limit=10
+Authorization: Bearer {{recruiterToken}}
+
+### 6.5 Get Recruiter Dashboard Analytics & Telemetry
+GET {{baseUrl}}/recruiter/statistics
+Authorization: Bearer {{recruiterToken}}
+
+
+### ------------------------------------------------------------------------------
+### 7. INTERVIEWS ENDPOINTS
+### ------------------------------------------------------------------------------
+
+### 7.1 Schedule an Interview (Recruiter / Admin)
+# @name scheduleInterview
+POST {{baseUrl}}/interviews
+Authorization: Bearer {{recruiterToken}}
+Content-Type: application/json
+
+{
+  "application_id": 1,
+  "scheduled_date": "2026-11-25",
+  "scheduled_time": "14:00:00",
+  "mode": "online",
+  "meeting_link": "https://meet.google.com/test-rms-interview",
+  "interviewer_notes": "Deep dive into PostgreSQL query optimization and indexes."
+}
+
+@interviewId = {{scheduleInterview.response.body.data.id}}
+
+### 7.2 Get User Interviews
+GET {{baseUrl}}/interviews/my
+Authorization: Bearer {{candidateToken}}
+
+### 7.3 Get Interview Details by ID
+GET {{baseUrl}}/interviews/1
+Authorization: Bearer {{candidateToken}}
+
+### 7.4 Update / Reschedule Interview
+PUT {{baseUrl}}/interviews/1
+Authorization: Bearer {{recruiterToken}}
+Content-Type: application/json
+
+{
+  "scheduled_date": "2026-11-26",
+  "scheduled_time": "15:30:00",
+  "status": "rescheduled"
+}
+
+
+### ------------------------------------------------------------------------------
+### 8. NOTIFICATIONS ENDPOINTS
+### ------------------------------------------------------------------------------
+
+### 8.1 Get Notifications & Unread Count
+GET {{baseUrl}}/notifications
+Authorization: Bearer {{candidateToken}}
+
+### 8.2 Mark Single Notification as Read
+PUT {{baseUrl}}/notifications/1/read
+Authorization: Bearer {{candidateToken}}
+
+### 8.3 Mark All Notifications as Read
+PUT {{baseUrl}}/notifications/read-all
+Authorization: Bearer {{candidateToken}}
+
+
+### ------------------------------------------------------------------------------
+### 9. SKILLS ENDPOINT
+### ------------------------------------------------------------------------------
+GET {{baseUrl}}/skills?search=React
+
+
+### ------------------------------------------------------------------------------
+### 10. ADMINISTRATOR ENDPOINTS
+### ------------------------------------------------------------------------------
+
+### 10.1 Get System Overview Statistics
+GET {{baseUrl}}/admin/statistics
+Authorization: Bearer {{adminToken}}
+
+### 10.2 List All Users (with Search & Role Filter)
+GET {{baseUrl}}/admin/users?page=1&limit=10&role=candidate
+Authorization: Bearer {{adminToken}}
+
+### 10.3 Activate or Deactivate User
+PUT {{baseUrl}}/admin/users/4/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "is_active": true
+}
+
+### 10.4 Get All Jobs Across Organization
+GET {{baseUrl}}/admin/jobs?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### 10.5 Get All Applications Systemwide
+GET {{baseUrl}}/admin/applications?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### 10.6 Inspect System Audit Logs
+GET {{baseUrl}}/admin/audit-logs?page=1&limit=15
+Authorization: Bearer {{adminToken}}
+
+### 10.7 Get System Configuration Settings
+GET {{baseUrl}}/admin/settings
+Authorization: Bearer {{adminToken}}
+
+### 10.8 Update System Configuration Settings
+PUT {{baseUrl}}/admin/settings
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "platformName": "TalentSync Enterprise Recruitment",
+  "allowRegistrations": true,
+  "maintenanceMode": false
+}
