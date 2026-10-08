@@ -11,7 +11,13 @@
     "start": "cd backend && npm start",
     "seed": "cd backend && npm run seed",
     "migrate": "cd backend && npm run migrate",
-    "test": "cd backend && npm test"
+    "test": "cd backend && npm test",
+    "app": "./app.sh",
+    "app:start": "./start.sh",
+    "app:stop": "./stop.sh",
+    "app:status": "./app.sh status",
+    "app:restart": "./app.sh restart",
+    "app:logs": "./app.sh logs"
   },
   "devDependencies": {
     "concurrently": "^9.2.5"
